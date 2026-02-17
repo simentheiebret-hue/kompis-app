@@ -8,14 +8,38 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedTab: TabItem = .home
+    @State private var showCreateTask = false
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        ZStack(alignment: .bottom) {
+            // Tab Content
+            Group {
+                switch selectedTab {
+                case .home:
+                    HomeView()
+                case .feed:
+                    FeedView()
+                case .create:
+                    EmptyView()
+                case .activity:
+                    ActivityView()
+                case .profile:
+                    ProfileView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Custom Tab Bar
+            KompisTabBar(selectedTab: $selectedTab, showCreateTask: $showCreateTask)
         }
-        .padding()
+        .background(Color.kompisBgPrimary)
+        .ignoresSafeArea(edges: .bottom)
+        .fullScreenCover(isPresented: $showCreateTask) {
+            BookingFlowView(category: .other) {
+                // Etter fullført bestilling
+            }
+        }
     }
 }
 
