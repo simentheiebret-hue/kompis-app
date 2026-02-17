@@ -39,46 +39,99 @@ struct KompisTabBar: View {
         HStack(spacing: 0) {
             ForEach(TabItem.allCases, id: \.self) { tab in
                 if tab == .create {
-                    // Floating Action Button
+                    // Floating Action Button – sentrert og løftet
                     Button(action: { showCreateTask = true }) {
                         ZStack {
+                            // Ytre glød-ring
+                            Circle()
+                                .fill(Color.kompisPrimary.opacity(0.25))
+                                .frame(width: 68, height: 68)
+                                .blur(radius: 8)
+
+                            // Hoved-sirkel med gradient
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [.kompisPrimary, .kompisAccent],
+                                        colors: [Color.kompisSecondary, Color.kompisPrimary],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
                                 .frame(width: 56, height: 56)
-                                .shadow(color: .kompisPrimary.opacity(0.4), radius: 8, x: 0, y: 4)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                                )
+                                .shadow(color: Color.kompisPrimary.opacity(0.5), radius: 12, x: 0, y: 6)
 
                             Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.white)
                         }
                     }
-                    .offset(y: -20)
+                    .offset(y: -22)
                     .frame(maxWidth: .infinity)
                 } else {
-                    Button(action: { selectedTab = tab }) {
-                        VStack(spacing: Spacing.xs) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 22))
-                            Text(tab.title)
-                                .font(.system(size: 10, weight: .medium))
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = tab
                         }
-                        .foregroundColor(selectedTab == tab ? .kompisPrimary : .kompisTextMuted)
+                    }) {
+                        VStack(spacing: 5) {
+                            ZStack {
+                                // Aktiv indikator-pill
+                                if selectedTab == tab {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.kompisAccent.opacity(0.2))
+                                        .frame(width: 40, height: 32)
+                                        .transition(.scale.combined(with: .opacity))
+                                }
+
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 20, weight: selectedTab == tab ? .semibold : .regular))
+                                    .foregroundColor(selectedTab == tab ? Color.kompisSecondary : Color.kompisTextMuted)
+                                    .scaleEffect(selectedTab == tab ? 1.1 : 1.0)
+                            }
+                            .frame(width: 40, height: 32)
+
+                            Text(tab.title)
+                                .font(.system(size: 10, weight: selectedTab == tab ? .semibold : .regular))
+                                .foregroundColor(selectedTab == tab ? Color.kompisSecondary : Color.kompisTextMuted)
+                        }
                         .frame(maxWidth: .infinity)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedTab)
                     }
                 }
             }
         }
         .padding(.top, Spacing.md)
-        .padding(.bottom, Spacing.xl)
+        .padding(.bottom, 28)
+        .padding(.horizontal, Spacing.sm)
         .background(
-            Color.kompisBgCard
-                .shadow(color: .black.opacity(0.05), radius: 20, x: 0, y: -5)
+            ZStack {
+                // Frosted glass base
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+
+                // Subtil grønn toning over glasset
+                Rectangle()
+                    .fill(Color.kompisBgSecondary.opacity(0.6))
+
+                // Top-border highlight
+                VStack {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.12), Color.clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 1)
+                    Spacer()
+                }
+            }
         )
+        .shadow(color: .black.opacity(0.4), radius: 24, x: 0, y: -8)
     }
 }
