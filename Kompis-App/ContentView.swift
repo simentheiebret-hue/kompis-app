@@ -18,8 +18,8 @@ struct ContentView: View {
                 switch selectedTab {
                 case .home:
                     HomeView()
-                case .feed:
-                    FeedView()
+                case .map:
+                    MapView()
                 case .create:
                     EmptyView()
                 case .activity:
