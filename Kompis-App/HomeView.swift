@@ -8,181 +8,106 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State private var selectedCategory: TaskCategory? = nil
-    @State private var showBookingFlow = false
+    @State private var showBookingFlow  = false
     @State private var bookingCategory: TaskCategory = .transport
-    @State private var showActiveOrder = false
-    @State private var hasActiveOrder = true
-    @State private var headerOpacity: Double = 1.0
+    @State private var showActiveOrder  = false
+    @State private var hasActiveOrder   = true
 
     let categories = TaskCategory.allCases
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                // MARK: - Bakgrunn med mesh-gradient
-                ZStack {
-                    LinearGradient(
-                        colors: [
-                            Color.kompisGradientTop,
-                            Color.kompisGradientBottom,
-                            Color(hex: "#0D2318")
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                Color.kompisBgPrimary.ignoresSafeArea()
 
-                    // Ambient orb øverst til venstre
-                    Circle()
-                        .fill(Color.kompisPrimary.opacity(0.35))
-                        .frame(width: 320, height: 320)
-                        .blur(radius: 80)
-                        .offset(x: -80, y: -120)
-
-                    // Amber orb nedre høyre
-                    Circle()
-                        .fill(Color.kompisSecondary.opacity(0.2))
-                        .frame(width: 280, height: 280)
-                        .blur(radius: 80)
-                        .offset(x: 120, y: 300)
-                }
-                .ignoresSafeArea()
-
-                // MARK: - Scrollbart innhold
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: Spacing.xl) {
+                    VStack(alignment: .leading, spacing: 0) {
 
                         // MARK: - Hero Header
-                        VStack(alignment: .leading, spacing: Spacing.sm) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("God dag,")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.kompisTextSecondary)
-                                    Text(MockData.currentUser.name)
-                                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                                        .foregroundColor(.kompisTextPrimary)
+                        HomeHeroHeader()
+
+                        VStack(alignment: .leading, spacing: Spacing.xxl) {
+
+                            // MARK: - Aktiv ordre-banner
+                            if hasActiveOrder {
+                                ActiveOrderBanner(order: MockData.mockActiveOrder) {
+                                    showActiveOrder = true
                                 }
-
-                                Spacer()
-
-                                // Profilavatar
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.kompisAccent.opacity(0.3))
-                                        .frame(width: 48, height: 48)
-                                    Text(String(MockData.currentUser.name.prefix(1)))
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(.kompisTextPrimary)
-                                }
-                                .overlay(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1.5))
-                            }
-
-                            Text("Hva trenger du hjelp med?")
-                                .font(.system(size: 15))
-                                .foregroundColor(.kompisTextSecondary)
-                        }
-                        .padding(.horizontal, Spacing.lg)
-                        .padding(.top, Spacing.lg)
-
-                        // MARK: - Aktiv ordre-banner (glass)
-                        if hasActiveOrder {
-                            ActiveOrderBanner(order: MockData.mockActiveOrder) {
-                                showActiveOrder = true
-                            }
-                            .padding(.horizontal, Spacing.lg)
-                        }
-
-                        // MARK: - Kategorikort (glass-grid)
-                        VStack(alignment: .leading, spacing: Spacing.md) {
-                            Text("Bestill hjelp")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.kompisTextMuted)
-                                .textCase(.uppercase)
-                                .tracking(1.2)
                                 .padding(.horizontal, Spacing.lg)
+                            }
 
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: Spacing.md),
-                                GridItem(.flexible(), spacing: Spacing.md),
-                                GridItem(.flexible(), spacing: Spacing.md)
-                            ], spacing: Spacing.md) {
-                                ForEach(categories, id: \.self) { category in
-                                    QuickCategoryButton(
-                                        category: category,
-                                        isSelected: selectedCategory == category
-                                    ) {
-                                        bookingCategory = category
-                                        showBookingFlow = true
+                            // MARK: - Kategorier
+                            VStack(alignment: .leading, spacing: Spacing.md) {
+                                SectionLabel("Hva trenger du hjelp med?")
+                                    .padding(.horizontal, Spacing.lg)
+
+                                LazyVGrid(
+                                    columns: [
+                                        GridItem(.flexible(), spacing: Spacing.md),
+                                        GridItem(.flexible(), spacing: Spacing.md),
+                                        GridItem(.flexible(), spacing: Spacing.md)
+                                    ],
+                                    spacing: Spacing.md
+                                ) {
+                                    ForEach(categories, id: \.self) { category in
+                                        QuickCategoryButton(category: category) {
+                                            bookingCategory = category
+                                            showBookingFlow = true
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, Spacing.lg)
                             }
-                            .padding(.horizontal, Spacing.lg)
-                        }
 
-                        // MARK: - Slik fungerer Kompis (glass-kort)
-                        VStack(alignment: .leading, spacing: Spacing.md) {
-                            Text("Slik fungerer det")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.kompisTextMuted)
-                                .textCase(.uppercase)
-                                .tracking(1.2)
+                            // MARK: - Slik fungerer det
+                            VStack(alignment: .leading, spacing: Spacing.md) {
+                                SectionLabel("Slik fungerer det")
+                                    .padding(.horizontal, Spacing.lg)
+
+                                VStack(spacing: 0) {
+                                    ForEach(Array(howItWorksSteps.enumerated()), id: \.offset) { index, step in
+                                        HowItWorksRow(step: step, stepNumber: index + 1)
+
+                                        if index < howItWorksSteps.count - 1 {
+                                            Rectangle()
+                                                .fill(Color.kompisDivider)
+                                                .frame(height: 1)
+                                                .padding(.leading, 56)
+                                        }
+                                    }
+                                }
+                                .kompisCard(radius: CornerRadius.xl)
+                                .padding(.horizontal, Spacing.lg)
+                            }
+
+                            // MARK: - I nærheten
+                            VStack(alignment: .leading, spacing: Spacing.md) {
+                                HStack {
+                                    SectionLabel("I nærheten")
+                                    Spacer()
+                                    Button {
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text("Se alle")
+                                            Image(systemName: "arrow.right")
+                                        }
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(.kompisPrimary)
+                                    }
+                                }
                                 .padding(.horizontal, Spacing.lg)
 
-                            VStack(spacing: Spacing.lg) {
-                                HowItWorksRow(number: "1", icon: "camera.fill",
-                                              title: "Ta et bilde",
-                                              description: "Vis hva du trenger hjelp med")
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.08))
-                                    .frame(height: 1)
-                                HowItWorksRow(number: "2", icon: "text.alignleft",
-                                              title: "Beskriv kort",
-                                              description: "Fortell hva som skal gjøres")
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.08))
-                                    .frame(height: 1)
-                                HowItWorksRow(number: "3", icon: "car.fill",
-                                              title: "Velg biltype",
-                                              description: "Personbil, varebil eller lastebil")
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.08))
-                                    .frame(height: 1)
-                                HowItWorksRow(number: "4", icon: "checkmark.circle.fill",
-                                              title: "Hjelpen er på vei",
-                                              description: "Følg med i sanntid")
-                            }
-                            .padding(Spacing.lg)
-                            .glassCard(cornerRadius: CornerRadius.xl)
-                            .padding(.horizontal, Spacing.lg)
-                        }
-
-                        // MARK: - I nærheten
-                        VStack(alignment: .leading, spacing: Spacing.md) {
-                            HStack {
-                                Text("I nærheten")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.kompisTextMuted)
-                                    .textCase(.uppercase)
-                                    .tracking(1.2)
-                                Spacer()
-                                HStack(spacing: 4) {
-                                    Text("Se alle")
-                                        .font(.system(size: 13, weight: .medium))
-                                    Image(systemName: "arrow.right")
-                                        .font(.system(size: 11, weight: .semibold))
+                                VStack(spacing: Spacing.sm) {
+                                    ForEach(MockData.tasks.prefix(3)) { task in
+                                        NearbyTaskRow(task: task)
+                                    }
                                 }
-                                .foregroundColor(.kompisSecondary)
+                                .padding(.horizontal, Spacing.lg)
                             }
-                            .padding(.horizontal, Spacing.lg)
 
-                            ForEach(MockData.tasks.prefix(2)) { task in
-                                NearbyTaskRow(task: task)
-                                    .padding(.horizontal, Spacing.lg)
-                            }
+                            Spacer(minLength: 120)
                         }
-
-                        Spacer(minLength: 130)
+                        .padding(.top, Spacing.xl)
                     }
                 }
             }
@@ -201,168 +126,213 @@ struct HomeView: View {
             }
         }
     }
+
+    // Steg-data for "Slik fungerer det"
+    var howItWorksSteps: [(icon: String, title: String, description: String)] {
+        [
+            ("camera.fill",          "Ta et bilde",        "Vis hva du trenger hjelp med"),
+            ("text.alignleft",       "Beskriv kort",       "Hva, hvor og når"),
+            ("car.fill",             "Velg biltype",       "Personbil, varebil eller lastebil"),
+            ("checkmark.circle.fill","Hjelpen er på vei",  "Følg med i sanntid"),
+        ]
+    }
 }
 
-// MARK: - Quick Category Button (glass-stil)
+// MARK: - Hero Header
+
+private struct HomeHeroHeader: View {
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            // Bakgrunnsflate med gradient
+            LinearGradient(
+                colors: [Color.kompisPrimary, Color(hex: "#3D7A62")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            // Dekorativ sirkel øverst til høyre
+            Circle()
+                .fill(Color.white.opacity(0.06))
+                .frame(width: 220, height: 220)
+                .offset(x: 140, y: -60)
+
+            Circle()
+                .fill(Color.kompisSecondary.opacity(0.15))
+                .frame(width: 140, height: 140)
+                .offset(x: 180, y: 20)
+
+            // Tekst
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("God dag,")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white.opacity(0.7))
+
+                Text(MockData.currentUser.name)
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+
+                Text("Hva trenger du hjelp med i dag?")
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.75))
+                    .padding(.top, 2)
+            }
+            .padding(.horizontal, Spacing.lg)
+            .padding(.vertical, Spacing.xxl)
+        }
+        // Runde bare de to nedre hjørnene
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: CornerRadius.xxl,
+                bottomTrailingRadius: CornerRadius.xxl,
+                topTrailingRadius: 0
+            )
+        )
+        .ignoresSafeArea(edges: .top)
+    }
+}
+
+// MARK: - Section Label
+
+private struct SectionLabel: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 18, weight: .bold, design: .rounded))
+            .foregroundColor(.kompisTextPrimary)
+    }
+}
+
+// MARK: - Quick Category Button
 
 struct QuickCategoryButton: View {
     let category: TaskCategory
-    let isSelected: Bool
     let action: () -> Void
-
     @State private var isPressed = false
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: Spacing.sm) {
                 ZStack {
-                    // Glass-sirkel bakgrunn
+                    // Bakgrunnssirkel
                     Circle()
-                        .fill(
-                            isSelected
-                            ? Color.kompisSecondary.opacity(0.3)
-                            : Color.white.opacity(0.08)
-                        )
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    isSelected
-                                    ? Color.kompisSecondary.opacity(0.6)
-                                    : Color.white.opacity(0.15),
-                                    lineWidth: 1.5
-                                )
-                        )
-
-                    // Glød bak ikonet ved valg
-                    if isSelected {
-                        Circle()
-                            .fill(Color.kompisSecondary.opacity(0.2))
-                            .frame(width: 60, height: 60)
-                            .blur(radius: 10)
-                    }
+                        .fill(Color.kompisPrimary.opacity(0.09))
+                        .frame(width: 62, height: 62)
 
                     Image(systemName: category.icon)
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(isSelected ? Color.kompisSecondary : Color.kompisTextPrimary)
+                        .font(.system(size: 26, weight: .medium))
+                        .foregroundColor(.kompisPrimary)
                 }
 
                 Text(category.rawValue)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(isSelected ? Color.kompisSecondary : Color.kompisTextSecondary)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.kompisTextSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, Spacing.md)
-            .scaleEffect(isPressed ? 0.93 : 1.0)
+            .background(Color.kompisBgCard)
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+            .scaleEffect(isPressed ? 0.94 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.3)) { isPressed = false }
-                }
+                .onChanged { _ in isPressed = true }
+                .onEnded   { _ in isPressed = false }
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
-// MARK: - Active Order Banner (glass-stil)
+// MARK: - Active Order Banner
 
 struct ActiveOrderBanner: View {
     let order: ActiveOrder
     let onTap: () -> Void
-
-    @State private var pulseScale: CGFloat = 1.0
+    @State private var pulse = false
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: Spacing.md) {
-                // Pulserende live-indikator
+                // Pulserende live-dot
                 ZStack {
                     Circle()
-                        .fill(Color.kompisSuccess.opacity(0.25))
-                        .frame(width: 40, height: 40)
-                        .scaleEffect(pulseScale)
-                        .animation(
-                            .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
-                            value: pulseScale
-                        )
+                        .fill(Color.kompisSuccess.opacity(0.2))
+                        .frame(width: 42, height: 42)
+                        .scaleEffect(pulse ? 1.25 : 1.0)
+                        .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: pulse)
 
                     Circle()
                         .fill(Color.kompisSuccess)
-                        .frame(width: 12, height: 12)
-
-                    Text("LIVE")
-                        .font(.system(size: 7, weight: .black))
-                        .foregroundColor(.white)
-                        .offset(y: 10)
+                        .frame(width: 14, height: 14)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(phaseText)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.kompisTextPrimary)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white)
                     if let eta = order.estimatedArrival {
                         Text("Ankommer om ca. \(eta) min")
                             .font(.system(size: 13))
-                            .foregroundColor(.kompisTextSecondary)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.kompisTextSecondary)
-                    .padding(8)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.6))
             }
             .padding(Spacing.lg)
-            .glassCard(cornerRadius: CornerRadius.xl)
+            .background(
+                LinearGradient(
+                    colors: [Color.kompisPrimary, Color(hex: "#3D7A62")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.xl))
+            .kompisElevated()
         }
         .buttonStyle(PlainButtonStyle())
-        .onAppear { pulseScale = 1.3 }
+        .onAppear { pulse = true }
     }
 
     var phaseText: String {
         switch order.phase {
-        case .searching: return "Finner en Kompis..."
-        case .matched:   return "Kompis funnet!"
-        case .enRoute:   return "Hjelp er på vei"
-        case .arrived:   return "Kompisen er fremme"
+        case .searching:  return "Finner en Kompis..."
+        case .matched:    return "Kompis funnet!"
+        case .enRoute:    return "Hjelp er på vei"
+        case .arrived:    return "Kompisen er fremme"
         case .inProgress: return "Oppdraget pågår"
-        case .completed: return "Fullført!"
-        default: return ""
+        case .completed:  return "Fullført!"
+        default:          return ""
         }
     }
 }
 
-// MARK: - Nearby Task Row (glass-stil)
+// MARK: - Nearby Task Row
 
 struct NearbyTaskRow: View {
     let task: Task
 
     var body: some View {
         HStack(spacing: Spacing.md) {
-            // Kategori-ikon med glass-bakgrunn
+            // Kategori-ikon
             ZStack {
                 RoundedRectangle(cornerRadius: CornerRadius.md)
-                    .fill(Color.kompisAccent.opacity(0.2))
+                    .fill(Color.kompisPrimary.opacity(0.09))
                     .frame(width: 52, height: 52)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CornerRadius.md)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                    )
 
                 Image(systemName: task.category.icon)
                     .font(.system(size: 22))
-                    .foregroundColor(.kompisAccent)
+                    .foregroundColor(.kompisPrimary)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -372,83 +342,75 @@ struct NearbyTaskRow: View {
                     .lineLimit(1)
 
                 HStack(spacing: Spacing.xs) {
-                    Image(systemName: "mappin.circle.fill")
+                    Image(systemName: "mappin.and.ellipse")
                         .font(.system(size: 11))
                         .foregroundColor(.kompisTextMuted)
                     Text(task.pickupLocation.city ?? "Oslo")
+                        .foregroundColor(.kompisTextSecondary)
                     Text("·")
+                        .foregroundColor(.kompisTextMuted)
                     Text(String(format: "%.1f km", task.distance))
+                        .foregroundColor(.kompisTextSecondary)
                 }
                 .font(.system(size: 12))
-                .foregroundColor(.kompisTextSecondary)
             }
 
             Spacer()
 
-            // Prismerke (glass)
-            VStack(spacing: 2) {
-                Text("\(task.price)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundColor(.kompisSecondary)
-                Text("kr")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.kompisTextMuted)
-            }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
-            .background(Color.kompisSecondary.opacity(0.12))
-            .overlay(
-                RoundedRectangle(cornerRadius: CornerRadius.md)
-                    .stroke(Color.kompisSecondary.opacity(0.3), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: CornerRadius.md))
+            // Pris-pill
+            Text("\(task.price) kr")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundColor(.kompisPrimary)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(Color.kompisPrimary.opacity(0.09))
+                .clipShape(Capsule())
         }
         .padding(Spacing.md)
-        .glassCard(cornerRadius: CornerRadius.lg)
+        .kompisCard(radius: CornerRadius.lg)
     }
 }
 
-// MARK: - How It Works Row (glass-stil)
+// MARK: - How It Works Row
 
 struct HowItWorksRow: View {
-    let number: String
-    var icon: String = ""
-    let title: String
-    let description: String
+    let step: (icon: String, title: String, description: String)
+    let stepNumber: Int
 
     var body: some View {
         HStack(alignment: .center, spacing: Spacing.md) {
-            // Nummerert sirkel med gradient
+            // Stegnummer med gradient-sirkel
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.kompisAccent, Color.kompisPrimary],
+                            colors: [Color.kompisPrimary, Color.kompisAccent],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 34, height: 34)
+                    .frame(width: 36, height: 36)
 
-                Text(number)
+                Text("\(stepNumber)")
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
             }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.title)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.kompisTextPrimary)
-                Text(description)
+                Text(step.description)
                     .font(.system(size: 13))
                     .foregroundColor(.kompisTextSecondary)
             }
 
             Spacer()
 
-            Image(systemName: icon)
+            Image(systemName: step.icon)
                 .font(.system(size: 18))
-                .foregroundColor(.kompisAccent.opacity(0.7))
+                .foregroundColor(.kompisAccent)
         }
+        .padding(Spacing.lg)
     }
 }
