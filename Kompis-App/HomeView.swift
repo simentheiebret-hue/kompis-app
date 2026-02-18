@@ -128,10 +128,9 @@ struct HomeView: View {
 
     var howItWorksSteps: [(icon: String, title: String, description: String)] {
         [
-            ("camera.fill",           "Ta et bilde",        "Vis hva du trenger hjelp med"),
-            ("text.alignleft",        "Beskriv kort",       "Hva, hvor og når"),
-            ("car.fill",              "Velg biltype",       "Personbil, varebil eller lastebil"),
-            ("checkmark.circle.fill", "Hjelpen er på vei",  "Følg med i sanntid"),
+            ("camera.fill",           "Ta et bilde",       "Vis hva du trenger hjelp med"),
+            ("text.alignleft",        "Beskriv kort",      "Hva, hvor og når"),
+            ("checkmark.circle.fill", "Hjelpen er på vei", "Følg med i sanntid"),
         ]
     }
 }
