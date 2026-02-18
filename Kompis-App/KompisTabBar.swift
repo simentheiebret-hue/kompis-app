@@ -8,25 +8,25 @@
 import SwiftUI
 
 enum TabItem: Int, CaseIterable {
-    case home, map, create, activity, profile
+    case home, feed, create, map, profile
 
     var icon: String {
         switch self {
-        case .home:     return "house.fill"
-        case .map:      return "map.fill"
-        case .create:   return "plus"
-        case .activity: return "clock.fill"
-        case .profile:  return "person.fill"
+        case .home:    return "house.fill"
+        case .feed:    return "rectangle.grid.1x2.fill"
+        case .create:  return "plus"
+        case .map:     return "map.fill"
+        case .profile: return "person.fill"
         }
     }
 
     var title: String {
         switch self {
-        case .home:     return "Hjem"
-        case .map:      return "Kart"
-        case .create:   return ""
-        case .activity: return "Aktivitet"
-        case .profile:  return "Profil"
+        case .home:    return "Hjem"
+        case .feed:    return "Oppdrag"
+        case .create:  return ""
+        case .map:     return "Kart"
+        case .profile: return "Profil"
         }
     }
 }

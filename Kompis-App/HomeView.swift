@@ -23,8 +23,8 @@ struct HomeView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
 
-                        // MARK: - Hero Header
-                        HomeHeroHeader()
+                        // MARK: - Header
+                        HomeHeader()
 
                         VStack(alignment: .leading, spacing: Spacing.xxl) {
 
@@ -136,53 +136,35 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Hero Header
+// MARK: - Header (clean, ingen farget bakgrunn)
 
-private struct HomeHeroHeader: View {
+private struct HomeHeader: View {
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            LinearGradient(
-                colors: [Color.kompisPrimary, Color(hex: "#3D7A62")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            Circle()
-                .fill(Color.white.opacity(0.06))
-                .frame(width: 220, height: 220)
-                .offset(x: 140, y: -60)
-
-            Circle()
-                .fill(Color.kompisSecondary.opacity(0.15))
-                .frame(width: 140, height: 140)
-                .offset(x: 180, y: 20)
-
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("God dag,")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
-
-                Text(MockData.currentUser.name)
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-
-                Text("Hva trenger du hjelp med i dag?")
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Hei, \(MockData.currentUser.name) 👋")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(.kompisTextPrimary)
+                Text("Hva trenger du hjelp med?")
                     .font(.system(size: 15))
-                    .foregroundColor(.white.opacity(0.75))
-                    .padding(.top, 2)
+                    .foregroundColor(.kompisTextSecondary)
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.xxl)
+
+            Spacer()
+
+            // Avatar
+            ZStack {
+                Circle()
+                    .fill(Color.kompisPrimary.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                Text(String(MockData.currentUser.name.prefix(1)))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.kompisPrimary)
+            }
         }
-        .clipShape(
-            UnevenRoundedRectangle(
-                topLeadingRadius: 0,
-                bottomLeadingRadius: CornerRadius.xxl,
-                bottomTrailingRadius: CornerRadius.xxl,
-                topTrailingRadius: 0
-            )
-        )
-        .ignoresSafeArea(edges: .top)
+        .padding(.horizontal, Spacing.lg)
+        .padding(.top, Spacing.lg)
+        .padding(.bottom, Spacing.sm)
     }
 }
 
