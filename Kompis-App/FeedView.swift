@@ -8,8 +8,15 @@
 import SwiftUI
 
 struct FeedView: View {
+    @Environment(TaskService.self) var taskService
     @State private var selectedFilter: FeedFilter = .all
-    let feedItems = MockData.feedItems
+
+    var feedItems: [FeedItem] {
+        taskService.tasks.map { task in
+            FeedItem(id: task.id, type: .needsHelp, task: task,
+                     postedAgo: timeAgo(task.createdAt))
+        }
+    }
 
     var filteredItems: [FeedItem] {
         switch selectedFilter {
@@ -17,6 +24,13 @@ struct FeedView: View {
         case .needsHelp: return feedItems.filter { $0.type == .needsHelp }
         case .freeItems: return feedItems.filter { $0.type == .freeItem }
         }
+    }
+
+    func timeAgo(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 3600 { return "\(max(1, Int(interval / 60))) min siden" }
+        else if interval < 86400 { return "\(Int(interval / 3600)) t siden" }
+        else { return "\(Int(interval / 86400)) d siden" }
     }
 
     var body: some View {
@@ -55,16 +69,32 @@ struct FeedView: View {
 
                 // Feed
                 ScrollView {
-                    LazyVStack(spacing: Spacing.md) {
-                        ForEach(filteredItems) { item in
-                            NavigationLink(destination: TaskDetailView(task: item.task)) {
-                                FeedCard(item: item)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                    if taskService.isLoading {
+                        ProgressView()
+                            .tint(.kompisPrimary)
+                            .padding(.top, Spacing.xxl)
+                    } else if filteredItems.isEmpty {
+                        VStack(spacing: Spacing.md) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 40))
+                                .foregroundColor(.kompisTextMuted)
+                            Text("Ingen oppdrag å vise")
+                                .font(.system(size: 15))
+                                .foregroundColor(.kompisTextMuted)
                         }
+                        .padding(.top, Spacing.xxl)
+                    } else {
+                        LazyVStack(spacing: Spacing.md) {
+                            ForEach(filteredItems) { item in
+                                NavigationLink(destination: TaskDetailView(task: item.task)) {
+                                    FeedCard(item: item)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, Spacing.lg)
+                        .padding(.top, Spacing.md)
                     }
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.top, Spacing.md)
 
                     Spacer(minLength: 120)
                 }
@@ -72,6 +102,7 @@ struct FeedView: View {
             }
             .background(Color.kompisBgPrimary)
             .navigationBarHidden(true)
+            .task { taskService.hentOppdrag() }
         }
     }
 }

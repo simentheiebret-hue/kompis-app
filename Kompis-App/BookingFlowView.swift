@@ -11,8 +11,11 @@ struct BookingFlowView: View {
     let category: TaskCategory
     let onComplete: () -> Void
 
+    @EnvironmentObject var authService: AuthService
+    @Environment(TaskService.self) var taskService
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep: BookingStep = .photo
+    @State private var isSaving = false
     @State private var description = ""
     @State private var pickupAddress = ""
     @State private var selectedVehicle: VehicleType? = nil
@@ -137,9 +140,27 @@ struct BookingFlowView: View {
             // MARK: - Bottom button
             VStack(spacing: Spacing.sm) {
                 if currentStep == .confirm {
-                    KompisButton(title: "Finn en Kompis", style: .primary, icon: "magnifyingglass") {
-                        onComplete()
-                        dismiss()
+                    if isSaving {
+                        ProgressView().tint(.kompisPrimary).frame(height: 54)
+                    } else {
+                        KompisButton(title: "Publiser oppdrag", style: .primary, icon: "checkmark") {
+                            guard let creatorId = authService.currentUser?.id else { return }
+                            isSaving = true
+                            _Concurrency.Task {
+                                try? await taskService.opprettOppdrag(
+                                    category: category,
+                                    description: description,
+                                    address: pickupAddress,
+                                    price: Int(price) ?? 0,
+                                    creatorId: creatorId
+                                )
+                                await MainActor.run {
+                                    isSaving = false
+                                    onComplete()
+                                    dismiss()
+                                }
+                            }
+                        }
                     }
                 } else {
                     KompisButton(

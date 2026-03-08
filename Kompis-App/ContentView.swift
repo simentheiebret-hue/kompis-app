@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var authService: AuthService
+    @Environment(ProfileService.self) var profileService
     @State private var selectedTab: TabItem = .home
     @State private var showCategoryPicker = false
     @State private var showBookingFlow = false
     @State private var selectedCategory: TaskCategory = .transport
 
     var body: some View {
+        if !authService.isAuthenticated {
+            AuthView()
+        } else {
         ZStack(alignment: .bottom) {
             // Tab Content
             Group {
@@ -37,6 +42,11 @@ struct ContentView: View {
         }
         .background(Color.kompisBgPrimary)
         .ignoresSafeArea(edges: .bottom)
+        .task(id: authService.isAuthenticated) {
+            if authService.isAuthenticated, let userId = authService.currentUser?.id {
+                await profileService.hentProfil(userId: userId)
+            }
+        }
         // Steg 1: velg kategori
         .sheet(isPresented: $showCategoryPicker) {
             CategoryPickerSheet(
@@ -59,6 +69,7 @@ struct ContentView: View {
         .fullScreenCover(isPresented: $showBookingFlow) {
             BookingFlowView(category: selectedCategory) {}
         }
+        } // end if isAuthenticated
     }
 }
 

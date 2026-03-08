@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject var authService: AuthService
+    @Environment(TaskService.self) var taskService
     @State private var showBookingFlow  = false
     @State private var bookingCategory: TaskCategory = .transport
     @State private var showActiveOrder  = false
-    @State private var hasActiveOrder   = true
+    @State private var hasActiveOrder   = false
 
     let categories = TaskCategory.allCases
 
@@ -96,12 +98,24 @@ struct HomeView: View {
                                 }
                                 .padding(.horizontal, Spacing.lg)
 
-                                VStack(spacing: Spacing.sm) {
-                                    ForEach(MockData.tasks.prefix(3)) { task in
-                                        NearbyTaskRow(task: task)
+                                if taskService.isLoading {
+                                    ProgressView().tint(.kompisPrimary).padding()
+                                } else if taskService.tasks.isEmpty {
+                                    Text("Ingen oppdrag i nærheten enda")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.kompisTextMuted)
+                                        .padding(.horizontal, Spacing.lg)
+                                } else {
+                                    VStack(spacing: Spacing.sm) {
+                                        ForEach(taskService.tasks.prefix(5)) { task in
+                                            NavigationLink(destination: TaskDetailView(task: task)) {
+                                                NearbyTaskRow(task: task)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
                                     }
+                                    .padding(.horizontal, Spacing.lg)
                                 }
-                                .padding(.horizontal, Spacing.lg)
                             }
 
                             Spacer(minLength: 120)
@@ -111,6 +125,7 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .task { taskService.hentOppdrag() }
             .fullScreenCover(isPresented: $showBookingFlow) {
                 BookingFlowView(category: bookingCategory) {
                     hasActiveOrder = true
@@ -138,10 +153,13 @@ struct HomeView: View {
 // MARK: - Header (clean, ingen farget bakgrunn)
 
 private struct HomeHeader: View {
+    @EnvironmentObject var authService: AuthService
+
     var body: some View {
+        let name = authService.currentUser?.name ?? "deg"
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Hei, \(MockData.currentUser.name) 👋")
+                Text("Hei, \(name) 👋")
                     .font(.system(size: 26, weight: .bold, design: .rounded))
                     .foregroundColor(.kompisTextPrimary)
                 Text("Hva trenger du hjelp med?")
@@ -156,7 +174,7 @@ private struct HomeHeader: View {
                 Circle()
                     .fill(Color.kompisPrimary.opacity(0.12))
                     .frame(width: 44, height: 44)
-                Text(String(MockData.currentUser.name.prefix(1)))
+                Text(String(name.prefix(1)))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(.kompisPrimary)
             }

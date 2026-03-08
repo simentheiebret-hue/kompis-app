@@ -21,7 +21,7 @@ struct User: Identifiable, Codable {
     var vehicleDescription: String?
 }
 
-struct Task: Identifiable, Codable {
+struct KompisTask: Identifiable, Codable {
     let id: UUID
     var title: String
     var description: String
@@ -37,6 +37,9 @@ struct Task: Identifiable, Codable {
     var completedAt: Date?
     var distance: Double // km fra bruker
 }
+
+// Bakoverkompatibelt alias — brukes i resten av appen
+typealias Task = KompisTask
 
 enum TaskCategory: String, Codable, CaseIterable {
     case transport = "Transport"

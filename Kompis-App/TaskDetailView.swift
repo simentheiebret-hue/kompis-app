@@ -10,6 +10,15 @@ import SwiftUI
 struct TaskDetailView: View {
     let task: Task
     @Environment(\.dismiss) private var dismiss
+    @Environment(TaskService.self) private var taskService
+    @Environment(ProfileService.self) private var profileService
+    @EnvironmentObject private var authService: AuthService
+
+    @State private var harSoekt = false
+    @State private var isSending = false
+    @State private var visError = false
+    @State private var feilmelding: String? = nil
+    @State private var visBliKompis = false
     
     var body: some View {
         ScrollView {
@@ -160,8 +169,72 @@ struct TaskDetailView: View {
                         }
                     }
                     
-                    // Knapp
-                    KompisButton(title: "Jeg vil hjelpe!", style: .primary, icon: "checkmark") {}
+                    // Knapp — avhenger av rolle
+                    let erEgenOppgave = authService.currentUser?.id == task.createdBy.id
+                    if erEgenOppgave {
+                        // Oppdragsgiver ser sitt eget oppdrag — ingen knapp ennå
+                        EmptyView()
+                    } else if profileService.isHelper {
+                        // Registrert kompis kan søke
+                        KompisButton(
+                            title: harSoekt ? "Søknad sendt ✓" : (isSending ? "Sender…" : "Jeg vil hjelpe!"),
+                            style: harSoekt ? .secondary : .primary,
+                            icon: harSoekt ? "checkmark.circle.fill" : "checkmark"
+                        ) {
+                            guard !harSoekt, !isSending,
+                                  let userId = authService.currentUser?.id else { return }
+                            isSending = true
+                            _Concurrency.Task {
+                                do {
+                                    try await taskService.sendSoeknad(taskId: task.id, applicantId: userId)
+                                    harSoekt = true
+                                } catch {
+                                    feilmelding = error.localizedDescription
+                                    visError = true
+                                }
+                                isSending = false
+                            }
+                        }
+                        .disabled(harSoekt || isSending)
+                    } else {
+                        // Ikke registrert som kompis ennå
+                        Button {
+                            visBliKompis = true
+                        } label: {
+                            HStack(spacing: Spacing.md) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.kompisPrimary.opacity(0.12))
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: "hands.clap.fill")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(.kompisPrimary)
+                                }
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Vil du hjelpe?")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.kompisTextPrimary)
+                                    Text("Registrer deg som Kompis for å søke")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.kompisTextSecondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.kompisTextMuted)
+                            }
+                            .padding(Spacing.lg)
+                            .background(Color.kompisBgCard)
+                            .cornerRadius(CornerRadius.lg)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CornerRadius.lg)
+                                    .stroke(Color.kompisPrimary.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .sheet(isPresented: $visBliKompis) {
+                            BliKompisView()
+                        }
+                    }
                     
                     Spacer(minLength: 100)
                 }
@@ -171,5 +244,15 @@ struct TaskDetailView: View {
         .background(Color.kompisBgPrimary)
         .navigationBarHidden(true)
         .ignoresSafeArea(edges: .top)
+        .task {
+            if let userId = authService.currentUser?.id {
+                harSoekt = await taskService.harSoekt(taskId: task.id, applicantId: userId)
+            }
+        }
+        .alert("Noe gikk galt", isPresented: $visError) {
+            Button("OK") { }
+        } message: {
+            Text(feilmelding ?? "Prøv igjen")
+        }
     }
 }
