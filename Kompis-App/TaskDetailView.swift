@@ -19,21 +19,32 @@ struct TaskDetailView: View {
     @State private var visError = false
     @State private var feilmelding: String? = nil
     @State private var visBliKompis = false
-    
+    @State private var visSlettBekreftelse = false
+    @State private var isDeleting = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Bilde
                 ZStack(alignment: .topLeading) {
-                    Rectangle()
-                        .fill(Color.kompisBgSecondary)
-                        .frame(height: 250)
-                        .overlay(
-                            Image(systemName: task.category.icon)
-                                .font(.system(size: 60))
-                                .foregroundColor(.kompisTextMuted)
-                        )
-                    
+                    if let imageURL = task.images.first {
+                        AsyncImage(url: imageURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 250)
+                                    .clipped()
+                            default:
+                                placeholderHeader
+                            }
+                        }
+                    } else {
+                        placeholderHeader
+                    }
+
                     // Tilbake-knapp
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
@@ -172,8 +183,14 @@ struct TaskDetailView: View {
                     // Knapp — avhenger av rolle
                     let erEgenOppgave = authService.currentUser?.id == task.createdBy.id
                     if erEgenOppgave {
-                        // Oppdragsgiver ser sitt eget oppdrag — ingen knapp ennå
-                        EmptyView()
+                        KompisButton(
+                            title: isDeleting ? "Sletter…" : "Slett annonse",
+                            style: .secondary,
+                            icon: isDeleting ? nil : "trash"
+                        ) {
+                            visSlettBekreftelse = true
+                        }
+                        .disabled(isDeleting)
                     } else if profileService.isHelper {
                         // Registrert kompis kan søke
                         KompisButton(
@@ -254,5 +271,35 @@ struct TaskDetailView: View {
         } message: {
             Text(feilmelding ?? "Prøv igjen")
         }
+        .alert("Slett annonse?", isPresented: $visSlettBekreftelse) {
+            Button("Slett", role: .destructive) {
+                isDeleting = true
+                _Concurrency.Task {
+                    do {
+                        try await taskService.slettOppdrag(taskId: task.id)
+                        dismiss()
+                    } catch {
+                        feilmelding = error.localizedDescription
+                        visError = true
+                    }
+                    isDeleting = false
+                }
+            }
+            Button("Avbryt", role: .cancel) { }
+        } message: {
+            Text("Annonsen slettes permanent og kan ikke gjenopprettes.")
+        }
+    }
+
+    private var placeholderHeader: some View {
+        Rectangle()
+            .fill(Color.kompisBgSecondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 250)
+            .overlay(
+                Image(systemName: task.category.icon)
+                    .font(.system(size: 60))
+                    .foregroundColor(.kompisTextMuted)
+            )
     }
 }

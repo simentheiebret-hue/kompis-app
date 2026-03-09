@@ -10,6 +10,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
     @Environment(ProfileService.self) var profileService
+    @Environment(TaskService.self) var taskService
     @State private var visBliKompis = false
 
     var user: User {
@@ -160,6 +161,9 @@ struct ProfileView: View {
                         }
                     }
 
+                    // Mine annonser
+                    MineAnnonserSeksjon(tasks: taskService.mineOppdrag)
+
                     // CO2-sparing
                     CO2Card(co2Saved: user.co2Saved)
                         .padding(.horizontal, Spacing.lg)
@@ -197,7 +201,126 @@ struct ProfileView: View {
             }
             .background(Color.kompisBgPrimary)
             .navigationBarHidden(true)
+            .task {
+                if let userId = authService.currentUser?.id {
+                    taskService.hentMineOppdrag(userId: userId)
+                }
+            }
         }
+    }
+}
+
+// MARK: - Mine annonser
+
+struct MineAnnonserSeksjon: View {
+    let tasks: [KompisTask]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                Text("Mine annonser")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundColor(.kompisTextPrimary)
+                Spacer()
+                Text("\(tasks.count) aktive")
+                    .font(.system(size: 13))
+                    .foregroundColor(.kompisTextMuted)
+            }
+            .padding(.horizontal, Spacing.lg)
+
+            if tasks.isEmpty {
+                HStack(spacing: Spacing.md) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 22))
+                        .foregroundColor(.kompisTextMuted)
+                    Text("Du har ingen aktive annonser")
+                        .font(.system(size: 14))
+                        .foregroundColor(.kompisTextMuted)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(Spacing.lg)
+                .background(Color.kompisBgCard)
+                .cornerRadius(CornerRadius.lg)
+                .padding(.horizontal, Spacing.lg)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: Spacing.md) {
+                        ForEach(tasks) { task in
+                            NavigationLink(destination: TaskDetailView(task: task)) {
+                                MinAnnonseKort(task: task)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, Spacing.lg)
+                }
+            }
+        }
+    }
+}
+
+struct MinAnnonseKort: View {
+    let task: KompisTask
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Bilde
+            ZStack(alignment: .bottomTrailing) {
+                if let imageURL = task.images.first {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        default:
+                            placeholderBg
+                        }
+                    }
+                } else {
+                    placeholderBg
+                }
+
+                Text("\(task.price) kr")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.kompisPrimary)
+                    .cornerRadius(CornerRadius.sm)
+                    .padding(6)
+            }
+            .frame(width: 150, height: 110)
+            .clipped()
+            .cornerRadius(CornerRadius.md, corners: [.topLeft, .topRight])
+
+            // Info
+            VStack(alignment: .leading, spacing: 3) {
+                Text(task.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.kompisTextPrimary)
+                    .lineLimit(2)
+                Text(task.pickupLocation.city ?? "Oslo")
+                    .font(.system(size: 11))
+                    .foregroundColor(.kompisTextMuted)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
+        .frame(width: 150)
+        .background(Color.kompisBgCard)
+        .cornerRadius(CornerRadius.md)
+        .kompisShadow()
+    }
+
+    private var placeholderBg: some View {
+        Rectangle()
+            .fill(Color.kompisBgSecondary)
+            .overlay(
+                Image(systemName: task.category.icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(.kompisTextMuted.opacity(0.5))
+            )
     }
 }
 

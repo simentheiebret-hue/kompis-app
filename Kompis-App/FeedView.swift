@@ -28,10 +28,15 @@ struct FeedView: View {
 
     func timeAgo(_ date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
-        if interval < 3600 { return "\(max(1, Int(interval / 60))) min siden" }
-        else if interval < 86400 { return "\(Int(interval / 3600)) t siden" }
-        else { return "\(Int(interval / 86400)) d siden" }
+        if interval < 3600 { return "\(max(1, Int(interval / 60))) min" }
+        else if interval < 86400 { return "\(Int(interval / 3600)) t" }
+        else { return "\(Int(interval / 86400)) d" }
     }
+
+    let columns = [
+        GridItem(.flexible(), spacing: 10),
+        GridItem(.flexible(), spacing: 10)
+    ]
 
     var body: some View {
         NavigationStack {
@@ -41,10 +46,6 @@ struct FeedView: View {
                     Text("Oppdrag")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(.kompisTextPrimary)
-
-                    Text("Se hva som skjer i nabolaget")
-                        .font(.system(size: 15))
-                        .foregroundColor(.kompisTextSecondary)
 
                     // Filter pills
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -67,7 +68,7 @@ struct FeedView: View {
                 .padding(.bottom, Spacing.md)
                 .background(Color.kompisBgPrimary)
 
-                // Feed
+                // Grid
                 ScrollView {
                     if taskService.isLoading {
                         ProgressView()
@@ -84,26 +85,111 @@ struct FeedView: View {
                         }
                         .padding(.top, Spacing.xxl)
                     } else {
-                        LazyVStack(spacing: Spacing.md) {
+                        LazyVGrid(columns: columns, spacing: 10) {
                             ForEach(filteredItems) { item in
                                 NavigationLink(destination: TaskDetailView(task: item.task)) {
-                                    FeedCard(item: item)
+                                    GridCard(item: item)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
                         }
                         .padding(.horizontal, Spacing.lg)
-                        .padding(.top, Spacing.md)
+                        .padding(.top, Spacing.sm)
                     }
 
                     Spacer(minLength: 120)
                 }
+                .refreshable { await taskService.refreshOppdrag() }
                 .background(Color.kompisBgPrimary)
             }
             .background(Color.kompisBgPrimary)
             .navigationBarHidden(true)
             .task { taskService.hentOppdrag() }
         }
+    }
+}
+
+// MARK: - Grid Card
+
+struct GridCard: View {
+    let item: FeedItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Image area
+            ZStack(alignment: .bottomLeading) {
+                if let imageURL = item.task.images.first {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        default:
+                            categoryPlaceholder
+                        }
+                    }
+                } else {
+                    categoryPlaceholder
+                }
+
+                // Gradient overlay
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.55)],
+                    startPoint: .center,
+                    endPoint: .bottom
+                )
+
+                // Price badge bottom-left
+                Text(item.task.price == 0 ? "Gratis" : "\(item.task.price) kr")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(item.task.price == 0 ? Color.kompisSuccess : Color.kompisPrimary)
+                    .cornerRadius(CornerRadius.md)
+                    .padding(8)
+            }
+            .frame(height: 160)
+            .clipped()
+            .cornerRadius(CornerRadius.lg, corners: [.topLeft, .topRight])
+
+            // Info area
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.task.title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(.kompisTextPrimary)
+                    .lineLimit(2)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin")
+                        .font(.system(size: 11))
+                        .foregroundColor(.kompisTextMuted)
+                    Text(item.task.pickupLocation.city ?? "Oslo")
+                        .font(.system(size: 12))
+                        .foregroundColor(.kompisTextMuted)
+                    Spacer()
+                    Text(item.postedAgo)
+                        .font(.system(size: 11))
+                        .foregroundColor(.kompisTextMuted)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        }
+        .background(Color.kompisBgCard)
+        .cornerRadius(CornerRadius.lg)
+        .kompisShadow()
+    }
+
+    private var categoryPlaceholder: some View {
+        Rectangle()
+            .fill(Color.kompisBgSecondary)
+            .overlay(
+                Image(systemName: item.task.category.icon)
+                    .font(.system(size: 36))
+                    .foregroundColor(.kompisTextMuted.opacity(0.5))
+            )
     }
 }
 
@@ -116,7 +202,7 @@ enum FeedFilter: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .all: return "rectangle.grid.1x2"
+        case .all: return "rectangle.grid.2x2"
         case .needsHelp: return "hand.raised.fill"
         case .freeItems: return "gift.fill"
         }
@@ -141,123 +227,6 @@ struct FeedFilterPill: View {
             .background(isSelected ? Color.kompisPrimary : Color.kompisBgSecondary)
             .foregroundColor(isSelected ? .white : .kompisTextSecondary)
             .cornerRadius(CornerRadius.pill)
-        }
-    }
-}
-
-// MARK: - Feed Card
-
-struct FeedCard: View {
-    let item: FeedItem
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Bilde/ikon area
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 0)
-                    .fill(Color.kompisBgSecondary)
-                    .frame(height: 160)
-                    .overlay(
-                        Image(systemName: item.task.category.icon)
-                            .font(.system(size: 44))
-                            .foregroundColor(.kompisTextMuted.opacity(0.6))
-                    )
-
-                // Type badge
-                HStack(spacing: Spacing.xs) {
-                    Circle()
-                        .fill(typeBadgeColor)
-                        .frame(width: 8, height: 8)
-                    Text(typeBadgeText)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(typeBadgeColor)
-                }
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.sm)
-                .background(Color.kompisBgCard.opacity(0.95))
-                .cornerRadius(CornerRadius.pill)
-                .padding(Spacing.md)
-            }
-            .cornerRadius(CornerRadius.lg, corners: [.topLeft, .topRight])
-
-            // Innhold
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text(item.task.title)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundColor(.kompisTextPrimary)
-                    .lineLimit(2)
-
-                Text(item.task.description)
-                    .font(.system(size: 14))
-                    .foregroundColor(.kompisTextSecondary)
-                    .lineLimit(2)
-
-                HStack {
-                    // Lokasjon
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: "mappin")
-                            .font(.system(size: 12))
-                        Text(item.task.pickupLocation.city ?? "Oslo")
-                        Text("·")
-                        Text(String(format: "%.1f km", item.task.distance))
-                    }
-                    .font(.system(size: 13))
-                    .foregroundColor(.kompisTextMuted)
-
-                    Spacer()
-
-                    // Pris / Gratis
-                    if item.type == .freeItem {
-                        Text("Gratis")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(.kompisSuccess)
-                    } else {
-                        Text("\(item.task.price) kr")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(.kompisPrimary)
-                    }
-                }
-
-                // Footer
-                HStack(spacing: Spacing.sm) {
-                    // Bruker
-                    Circle()
-                        .fill(Color.kompisBgSecondary)
-                        .frame(width: 24, height: 24)
-                        .overlay(
-                            Text(String(item.task.createdBy.name.prefix(1)))
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.kompisTextSecondary)
-                        )
-                    Text(item.task.createdBy.name)
-                        .font(.system(size: 13))
-                        .foregroundColor(.kompisTextSecondary)
-
-                    Spacer()
-
-                    Text(item.postedAgo)
-                        .font(.system(size: 12))
-                        .foregroundColor(.kompisTextMuted)
-                }
-            }
-            .padding(Spacing.md)
-        }
-        .background(Color.kompisBgCard)
-        .cornerRadius(CornerRadius.lg)
-        .kompisShadow()
-    }
-
-    var typeBadgeText: String {
-        switch item.type {
-        case .needsHelp: return "Trenger hjelp"
-        case .freeItem: return "Gis bort"
-        }
-    }
-
-    var typeBadgeColor: Color {
-        switch item.type {
-        case .needsHelp: return .kompisSecondary
-        case .freeItem: return .kompisSuccess
         }
     }
 }

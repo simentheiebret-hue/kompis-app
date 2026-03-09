@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		19D7C98A2E2CFC2A8BAECD4D /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = AC6D55BD1212D22866D8294C /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		5B672B632F35151C00A80A33 /* Kompis-App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kompis-App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		741D94AF2F56349D00EC27CE /* Exceptions for "Kompis-App" folder in "Kompis-App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5B672B622F35151C00A80A33 /* Kompis-App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5B672B652F35151C00A80A33 /* Kompis-App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				741D94AF2F56349D00EC27CE /* Exceptions for "Kompis-App" folder in "Kompis-App" target */,
+			);
 			path = "Kompis-App";
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19D7C98A2E2CFC2A8BAECD4D /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = "Kompis-App";
 			packageProductDependencies = (
+				AC6D55BD1212D22866D8294C /* Supabase */,
 			);
 			productName = "Kompis-App";
 			productReference = 5B672B632F35151C00A80A33 /* Kompis-App.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = 5B672B5A2F35151C00A80A33;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5BBB69032F4CDB10004F3A61 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5B672B642F35151C00A80A33 /* Products */;
 			projectDirPath = "";
@@ -253,6 +275,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kompis-App/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +307,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Kompis-App/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -328,6 +352,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5BBB69032F4CDB10004F3A61 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AC6D55BD1212D22866D8294C /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5BBB69032F4CDB10004F3A61 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5B672B5B2F35151C00A80A33 /* Project object */;
 }

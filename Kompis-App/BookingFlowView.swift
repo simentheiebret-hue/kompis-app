@@ -16,11 +16,13 @@ struct BookingFlowView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentStep: BookingStep = .photo
     @State private var isSaving = false
+    @State private var visError = false
+    @State private var feilmelding: String? = nil
     @State private var description = ""
     @State private var pickupAddress = ""
     @State private var selectedVehicle: VehicleType? = nil
     @State private var price = ""
-    @State private var hasPhoto = false
+    @State private var selectedImage: UIImage? = nil
 
     enum BookingStep: Int, CaseIterable {
         case photo = 1
@@ -46,7 +48,7 @@ struct BookingFlowView: View {
 
     var canContinue: Bool {
         switch currentStep {
-        case .photo: return hasPhoto
+        case .photo: return selectedImage != nil
         case .describe: return !description.trimmingCharacters(in: .whitespaces).isEmpty
         case .vehicle: return selectedVehicle != nil
         case .price: return !price.trimmingCharacters(in: .whitespaces).isEmpty
@@ -110,7 +112,7 @@ struct BookingFlowView: View {
             Group {
                 switch currentStep {
                 case .photo:
-                    PhotoStepContent(hasPhoto: $hasPhoto)
+                    PhotoStepContent(selectedImage: $selectedImage)
                 case .describe:
                     DescribeStepContent(
                         description: $description,
@@ -147,17 +149,26 @@ struct BookingFlowView: View {
                             guard let creatorId = authService.currentUser?.id else { return }
                             isSaving = true
                             _Concurrency.Task {
-                                try? await taskService.opprettOppdrag(
-                                    category: category,
-                                    description: description,
-                                    address: pickupAddress,
-                                    price: Int(price) ?? 0,
-                                    creatorId: creatorId
-                                )
-                                await MainActor.run {
-                                    isSaving = false
-                                    onComplete()
-                                    dismiss()
+                                do {
+                                    try await taskService.opprettOppdrag(
+                                        category: category,
+                                        description: description,
+                                        address: pickupAddress,
+                                        price: Int(price) ?? 0,
+                                        creatorId: creatorId,
+                                        image: selectedImage
+                                    )
+                                    await MainActor.run {
+                                        isSaving = false
+                                        onComplete()
+                                        dismiss()
+                                    }
+                                } catch {
+                                    await MainActor.run {
+                                        isSaving = false
+                                        feilmelding = error.localizedDescription
+                                        visError = true
+                                    }
                                 }
                             }
                         }
@@ -180,6 +191,11 @@ struct BookingFlowView: View {
         .background(Color.kompisBgPrimary)
         .navigationBarHidden(true)
         .animation(.spring(response: 0.35), value: currentStep)
+        .alert("Noe gikk galt", isPresented: $visError) {
+            Button("OK") { }
+        } message: {
+            Text(feilmelding ?? "Prøv igjen")
+        }
     }
 
     func goBack() {
@@ -200,7 +216,8 @@ struct BookingFlowView: View {
 // MARK: - Steg 1: Ta bilde
 
 struct PhotoStepContent: View {
-    @Binding var hasPhoto: Bool
+    @Binding var selectedImage: UIImage?
+    @State private var visImagePicker = false
 
     var body: some View {
         VStack(spacing: Spacing.xl) {
@@ -215,23 +232,16 @@ struct PhotoStepContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, Spacing.lg)
 
-            if hasPhoto {
+            if let image = selectedImage {
                 ZStack(alignment: .topTrailing) {
-                    RoundedRectangle(cornerRadius: CornerRadius.lg)
-                        .fill(Color.kompisPrimary.opacity(0.1))
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
                         .frame(height: 300)
-                        .overlay(
-                            VStack(spacing: Spacing.md) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(.kompisSuccess)
-                                Text("Bilde tatt!")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.kompisPrimary)
-                            }
-                        )
+                        .clipShape(RoundedRectangle(cornerRadius: CornerRadius.lg))
 
-                    Button(action: { hasPhoto = false }) {
+                    Button(action: { selectedImage = nil }) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.kompisTextSecondary)
@@ -244,23 +254,20 @@ struct PhotoStepContent: View {
                 }
                 .padding(.horizontal, Spacing.lg)
             } else {
-                Button(action: { hasPhoto = true }) {
+                Button(action: { visImagePicker = true }) {
                     VStack(spacing: Spacing.lg) {
                         ZStack {
                             Circle()
                                 .fill(Color.kompisPrimary.opacity(0.1))
                                 .frame(width: 80, height: 80)
-
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 32))
                                 .foregroundColor(.kompisPrimary)
                         }
-
-                        Text("Trykk for å ta bilde")
+                        Text("Trykk for å velge bilde")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.kompisPrimary)
-
-                        Text("eller velg fra biblioteket")
+                        Text("fra kamerarulle eller ta nytt bilde")
                             .font(.system(size: 14))
                             .foregroundColor(.kompisTextMuted)
                     }
@@ -275,6 +282,10 @@ struct PhotoStepContent: View {
             }
         }
         .padding(.top, Spacing.lg)
+        .sheet(isPresented: $visImagePicker) {
+            ImagePicker(image: $selectedImage)
+                .ignoresSafeArea()
+        }
     }
 }
 

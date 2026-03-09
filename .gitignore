@@ -1,0 +1,27 @@
+# Secrets — skal ALDRI committes
+Kompis-App/Config.swift
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcarchive
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# CocoaPods (ikke i bruk, men for sikkerhets skyld)
+Pods/
+Podfile.lock
